@@ -46,7 +46,7 @@ Non-trainable params: 0
 _________________________________________________________________
 
 
-@author: George Molina-Stubbs
+@author: georgems
 """
 
 
