@@ -5,4 +5,4 @@ An exploration of the canonical example for computer vision, the MNIST handwritt
 * mnist_explore.py is the initial exploration of the data set, and fits a Gaussian NB and gradient boosted decision trees.
 * mnist_cnn.py is the CNN fitted using Keras
 * mod_CNN is the final fitted Keras model
-
+* package_list.txt is a list of packages installed in the working environment
