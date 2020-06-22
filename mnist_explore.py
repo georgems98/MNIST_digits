@@ -35,6 +35,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
+from sklearn.pipeline import make_pipeline
 
 
 #%% ==== LOAD DATA ====
@@ -53,7 +54,6 @@ fig, axes = plt.subplots(10, 10, figsize=(8,8),
                          subplot_kw={'xticks': [], 'yticks': []},
                          gridspec_kw = dict(hspace=0.1, wspace=0.1))
 
-# Iterate over each ax in the axes array
 for i, ax in enumerate(axes.flat):
     # Display the digit image in the given ax
     ax.imshow(Xtest[i].reshape(8,8), cmap='binary', interpolation='nearest')
@@ -84,9 +84,7 @@ plt.clim(-0.5, 9.5)
 
 #%% ==== NAIVE BAYES CLASSIFIER ====
 # ---- MODEL
-# Select model
 from sklearn.naive_bayes import GaussianNB
-
 
 mod_NB = GaussianNB()
 mod_NB.fit(Xtrain, ytrain)
@@ -103,6 +101,7 @@ def plot_conf_mat(y_pred):
     Given an array of predictions on the test set, plot a confusion matrix of 
     the correct labels vs the predicted labels.
     """
+    plt.figure()
     mat = confusion_matrix(ytest, y_pred)
 
     sns.heatmap(mat, square = True, annot = True, cbar = False)
@@ -135,6 +134,78 @@ plot_sample(y_pred_NB)
 Not a great classifier (83% accuray) but not bad for an easily fitted first 
 attempt. Considering we're working with image data we wouldn't expect the 
 pixel values to be independent anyway.
+"""
+
+
+#%% ==== NB WITH PCA ====
+# Change precision to 32 bit and normalise pixel values.
+Xtrain = Xtrain.astype("float32")/255
+Xtest = Xtest.astype("float32")/255
+
+
+# ---- MODEL
+from sklearn.decomposition import PCA
+
+# 
+pca = PCA().fit(Xtrain)
+plt.figure()
+plt.plot(np.cumsum(pca.explained_variance_ratio_))
+plt.xlabel("n_components")
+plt.ylabel("cumulative explained variance ratio")
+
+pca = PCA()
+nb = GaussianNB()
+
+mod_NB2 = make_pipeline(pca, nb)
+
+grid_params = dict(pca__n_components=np.arange(2,65))
+grid = GridSearchCV(mod_NB2, grid_params, cv=10).fit(Xtrain, ytrain)
+
+"""
+{'pca__n_components': 41}
+"""
+
+mod_NB2 = grid.best_estimator_.fit(Xtrain, ytrain)
+
+
+
+
+Xtest_trans = pca.inverse_transform(pca.transform(Xtest))
+
+fig, axes = plt.subplots(10, 10, figsize=(8,8), 
+                         subplot_kw={'xticks': [], 'yticks': []},
+                         gridspec_kw = dict(hspace=0.1, wspace=0.1))
+
+# Iterate over each ax in the axes array
+for i, ax in enumerate(axes.flat):
+    # Display the digit image in the given ax
+    ax.imshow(Xtest_trans[i].reshape(8,8), cmap='binary', interpolation='nearest')
+    
+    # Add the correct label in the corner
+    ax.text(0.05, 0.05, str(ytest[i]), transform = ax.transAxes, 
+            color = 'green')
+
+
+
+
+
+
+
+
+
+
+mod_NB2.fit(Xtrain, ytrain)
+
+# ---- PREDICTIONS
+y_pred_NB2 = mod_NB2.predict(Xtest)
+print(accuracy_score(ytest, y_pred_NB2))      # 0.94
+
+plot_conf_mat(y_pred_NB2)
+plot_sample(y_pred_NB2)
+
+"""
+Looks like we need to find a more sophisticated classifier, with 94% accuracy 
+as our baseline success.
 """
 
 
