@@ -2,6 +2,12 @@
 """
 Created on Wed Jun 17 19:35:11 2020
 
+Program reading order:
+1) mnist_explore.py
+2) mnist_gradient_boost.py
+3) mnist_cnn.py
+
+    
 We continue exploring the MNIST digit set, trying to improve upon the efforts 
 of our previous classifiers. 
 

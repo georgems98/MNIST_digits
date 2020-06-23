@@ -1,4 +1,4 @@
-#List of packages installed in the conda environment for the MNIST_digit project.
+# List of packages installed in the conda environment for the MNIST_digit project.
 
 # Name                    Version                   Build  Channel
 _tflow_select             2.2.0                     eigen
