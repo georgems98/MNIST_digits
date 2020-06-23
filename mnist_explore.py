@@ -19,6 +19,9 @@ Reducing the input dimensions to 41-dim with PCA offers a big improvement over
 NB at a low computational cost, giving us 94% accuracy as a baseline for more
 complex models.
 
+Removing "redundant" information from the image data possibly improves the fit
+here because there is less dependence between the components that are kept.
+
 
 @author: georgems
 """
@@ -32,7 +35,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import validation_curve
 from sklearn.model_selection import learning_curve
 from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
 from sklearn.pipeline import make_pipeline
@@ -74,6 +76,7 @@ iso.fit(digits.data)
 data_projected = iso.transform(digits.data)
 
 # Plot the 2D projected data with points coloured to match classifications
+plt.figure()
 plt.scatter(data_projected[:,0], data_projected[:,1], c=digits.target,
             edgecolor='none', alpha = 0.6, 
             cmap=plt.cm.get_cmap('Paired', 10))
@@ -91,7 +94,7 @@ mod_NB.fit(Xtrain, ytrain)
 
 # Predictions on test data
 y_pred_NB = mod_NB.predict(Xtest)
-accuracy_score(ytest, y_pred_NB) # 0.8333333333333334
+print(accuracy_score(ytest, y_pred_NB)) # 0.8333333333333334
 
 
 # ---- PREDICTION PLOTS
@@ -113,7 +116,7 @@ def plot_sample(y_pred):
     """
     Given an array of predictions on the test set, plot the first 100 
     images in the test set along with the predicted label.
-    """
+    """   
     # Initialise a figure of 10x10 axes
     fig, axes = plt.subplots(10, 10, figsize=(8,8), 
                          subplot_kw={'xticks': [], 'yticks': []},
@@ -136,7 +139,8 @@ N, train_lc, test_lc = learning_curve(GaussianNB(),
                                       Xtrain, ytrain, 
                                       train_sizes=np.linspace(0.3,1,20),
                                       cv=50)
-    
+
+plt.figure()
 plt.plot(N, np.mean(train_lc,1), label="train")
 plt.plot(N, np.mean(test_lc,1), label="test")
 plt.legend(loc="best")
@@ -150,11 +154,10 @@ Not a great classifier at 83% accuray but not entirely terrible for an easily
 fitted first attempt. 
 
 Plotting the learning curve shows the test score increasing up to a point and
-then decreasing - possible overfitting to the training data.
+then decreasing - possible overfitting to the training data?
 
 Let's reduce the dimensions of the input data...
 """
-
 
 
 #%% ==== NB WITH PCA ====
@@ -167,13 +170,14 @@ Xtest = Xtest.astype("float32")/255
 from sklearn.decomposition import PCA
 
 
-# ---- TUNE N_COMPONENTS
+# ---- TUNE N_COMPONENTS FOR PCA
 # Quick plot of the explained variance ratio against n_components
 pca = PCA().fit(Xtrain)
 plt.figure()
 plt.plot(np.cumsum(pca.explained_variance_ratio_))
 plt.xlabel("n_components")
 plt.ylabel("cumulative explained variance ratio")
+plt.title("Explained variance")
 
 # Set pipepline and perform a grid search - very quick so search all values
 pca = PCA()
@@ -189,27 +193,26 @@ grid = GridSearchCV(mod_NB2, grid_params, cv=10).fit(Xtrain, ytrain)
 
 #%% We can plot the transformed data 
 pca = PCA(41).fit(Xtrain)
-Xtest_trans = pca.inverse_transform(pca.transform(Xtest))
+Xtrain_trans = pca.inverse_transform(pca.transform(Xtrain))
 
 fig, axes = plt.subplots(10, 10, figsize=(8,8), 
                          subplot_kw={'xticks': [], 'yticks': []},
                          gridspec_kw = dict(hspace=0.1, wspace=0.1))
 
 for i, ax in enumerate(axes.flat):
-    ax.imshow(Xtest_trans[i].reshape(8,8), cmap='binary', interpolation='nearest')
+    ax.imshow(Xtrain_trans[i].reshape(8,8), cmap='binary', interpolation='nearest')
     
-    ax.text(0.05, 0.05, str(ytest[i]), transform = ax.transAxes, 
+    ax.text(0.05, 0.05, str(ytrain[i]), transform = ax.transAxes, 
             color = 'green')
 
 """
 We can verify visually that with 41 components the image data is completely 
-recognisable. Some additional noise seems to have been introduced, which might
-help with the overfitting. 
+recognisable. Some additional noise seems to have been introduced.
 """
 
 
 #%% ---- FIT
-mod_NB2 = grid.best_estimator_.fit(Xtrain, ytrain)
+mod_NB2 = make_pipeline(PCA(41), GaussianNB())
 mod_NB2.fit(Xtrain, ytrain)
 
 

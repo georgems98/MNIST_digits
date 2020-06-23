@@ -2,7 +2,7 @@
 """
 Created on Mon Jun 22 16:58:40 2020
 
-Program reading order:
+Program reading order
 1) mnist_explore.py
 2) mnist_gradient_boost.py
     
@@ -42,8 +42,6 @@ y = digits.target
 Xtrain, Xtest, ytrain, ytest = train_test_split(X, y, random_state=0)
 
 
-
-
 #%% ==== GRADIENT BOOSTING CLASSIFIER ====
 # Change precision to 32 bit and normalise pixel values.
 Xtrain = Xtrain.astype("float32")/255
@@ -69,8 +67,6 @@ def val_plot(mod, param, param_range):
     plt.ylabel("accuracy")
     plt.title("Accuracy vs " + param)
     
-    
-
 
 n_estimators = np.arange(40,200,20)
 mod = GradientBoostingClassifier(verbose=1)
@@ -151,61 +147,7 @@ y_pred_GB = mod_GB.predict(Xtest)
 print(accuracy_score(ytest, y_pred_GB))     # 0.9666666666666667
                                             # 0.9733333333333334
 
-#%%
-# Plot learning curve against dataset size
-N, train_lc, test_lc = learning_curve(mod_GB, 
-                                      Xtrain, ytrain, 
-                                      train_sizes=np.linspace(0.3,1,10),
-                                      cv=5)
-
-plt.plot(N,np.mean(train_lc,1))
-plt.plot(N,np.mean(test_lc,1))
-plt.legend(["train", "test"])
-plt.xlabel("training size")
-plt.ylabel("accuracy")
-plt.title("learning curve for gradient boost")
-
-"""
-This looks better!
-
-I don't think we're overfitting here either so PCA might not help much.
-
-"""
-
-
-#%%
-
-
-pca = PCA()
-gb = GradientBoostingClassifier(learning_rate=0.1, n_estimators=110,
-                                    max_depth=3, min_samples_split=2,
-                                    subsample=0.65,
-                                    verbose=0)
-mod_GB2 = make_pipeline(pca, gb)
-
-grid_params = dict(pca__n_components=np.arange(2,65))
-grid = GridSearchCV(mod_GB2, grid_params, cv=10).fit(Xtrain, ytrain)
-
-"""
-{'pca__n_components': 24}
-"""
-
-#%% ---- FIT
-mod_GB2 = grid.best_estimator_.fit(Xtrain, ytrain)
-mod_GB2.fit(Xtrain, ytrain)
-
-
-# ---- PREDICTIONS
-y_pred_GB2 = mod_GB2.predict(Xtest)
-
-print(accuracy_score(ytest, y_pred_GB2))       # 0.9533333333333334
-
-plot_conf_mat(y_pred_GB2)
-plot_sample(y_pred_GB2)
-
-
-
-#%% ---- PREDICTION PLOTS
+# ---- PREDICTION PLOTS
 
 def plot_conf_mat(y_pred):
     """
@@ -250,3 +192,22 @@ We need a more sophisticated model, e.g. a CNN that can use the inherent
 spatial information in the image.
 """
 
+
+#%%
+# Plot learning curve against dataset size
+N, train_lc, test_lc = learning_curve(mod_GB, 
+                                      Xtrain, ytrain, 
+                                      train_sizes=np.linspace(0.3,1,10),
+                                      cv=5)
+
+plt.plot(N,np.mean(train_lc,1))
+plt.plot(N,np.mean(test_lc,1))
+plt.legend(["train", "test"])
+plt.xlabel("training size")
+plt.ylabel("accuracy")
+plt.title("learning curve for gradient boost")
+
+"""
+This looks better than the NB! However this model might need more training 
+data.
+"""
